@@ -1,10 +1,14 @@
 [package]
 name = "eix"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 description = "Library for handling the EIX-file format of Gentoo Linux"
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/Komplix/eix-lib"
+keywords = ["gentoo", "portage", "eix", "parser"]
+categories = ["parsing", "os::linux-apis"]
+
 [dependencies]
+serde = { version = "1.0", features = ["derive"] }
 
