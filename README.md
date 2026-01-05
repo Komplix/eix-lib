@@ -24,6 +24,7 @@ fn main() -> std::io::Result<()> {
 
 ## License
 
-MIT
+MIT OR Apache 2.0
+
 
 
