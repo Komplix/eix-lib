@@ -3,7 +3,7 @@
 //! The portage.eix file is a binary database for fast access
 //! to Gentoo Portage ebuild information.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufReader, Read};
@@ -48,7 +48,7 @@ pub const DB_VERSION_CURRENT: DBVersion = 39;
  * Then: Feature flags (bitmask)
  * Then: World sets
  */
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DBHeader {
     // Current database version
     pub version: DBVersion,
@@ -87,7 +87,7 @@ pub type DBVersion = u32;
 /*
  * OverlayIdent - Identification of an overlay/repository
  */
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OverlayIdent {
     pub path: String,  // Path to the overlay (e.g. "/usr/portage")
     pub label: String, // Label of the overlay (e.g. "gentoo")
@@ -185,7 +185,7 @@ impl PartType {
 /*
  * Package - Representation of a package
  */
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Package {
     pub category: String,
     pub name: String,
@@ -198,7 +198,7 @@ pub struct Package {
 /*
  * Version - A specific version of a package
  */
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Version {
     #[serde(rename = "version")]
     pub version_string: String,
@@ -268,7 +268,7 @@ impl Version {
 /*
  * Depend - Dependencies of a package
  */
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Depend {
     pub depend: Vec<String>,
     pub rdepend: Vec<String>,

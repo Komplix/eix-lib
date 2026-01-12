@@ -26,6 +26,18 @@ fn main() -> std::io::Result<()> {
 }
 ```
 
+## Examples
+
+### eix2json
+
+The library includes an example tool `eix2json` that converts an `eix` database to JSON format.
+
+```bash
+cargo run --example eix2json -- /var/cache/eix/portage.eix output.json
+```
+
+If no output file is specified, it will output to stdout.
+
 ## License
 Licensed under either of
 
