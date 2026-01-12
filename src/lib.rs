@@ -17,9 +17,14 @@ pub type Treesize = u32;
 pub type OffsetType = i64;
 
 /* Mask Flags constants */
+pub const MASK_PACKAGE: u8 = 0x01;
+pub const MASK_PROFILE: u8 = 0x02;
+pub const MASK_HARD: u8 = MASK_PACKAGE | MASK_PROFILE;
 pub const MASK_SYSTEM: u8 = 0x04;
 pub const MASK_WORLD: u8 = 0x08;
 pub const MASK_WORLD_SETS: u8 = 0x10;
+pub const MASK_IN_PROFILE: u8 = 0x20;
+pub const MASK_MARKED: u8 = 0x40;
 
 /* Magic Number and Version */
 pub const MAGICNUMCHAR: u8 = 0xFF;
@@ -216,9 +221,7 @@ pub struct Version {
 
 impl Version {
     pub fn is_installed(&self) -> bool {
-        (self.mask_flags & MASK_WORLD) != 0
-            || (self.mask_flags & MASK_WORLD_SETS) != 0
-            || (self.mask_flags & MASK_SYSTEM) != 0
+        (self.mask_flags & MASK_IN_PROFILE) != 0 || (self.mask_flags & MASK_MARKED) != 0
     }
 
     pub fn get_full_version(&self) -> String {
@@ -529,7 +532,7 @@ impl Database {
             eapi = self.read_hash_string(&hdr.eapi_hash)?;
         }
 
-        let mask_flags = self.read_num()? as u8;
+        let mask_flags = self.read_uchar()?;
         let properties_flags = self.read_uchar()?;
         let restrict_flags = self.read_num()?;
         let keywords = self.read_hash_words(&hdr.keywords_hash)?;
@@ -847,13 +850,10 @@ mod tests {
         };
         assert!(!v.is_installed());
 
-        v.mask_flags = MASK_SYSTEM;
+        v.mask_flags = MASK_IN_PROFILE;
         assert!(v.is_installed());
 
-        v.mask_flags = MASK_WORLD;
-        assert!(v.is_installed());
-
-        v.mask_flags = MASK_WORLD_SETS;
+        v.mask_flags = MASK_MARKED;
         assert!(v.is_installed());
     }
 }
