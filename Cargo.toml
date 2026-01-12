@@ -1,6 +1,6 @@
 [package]
 name = "eix"
-version = "0.2.2"
+version = "0.3.0"
 edition = "2024"
 description = "Library for handling the EIX-file format of Gentoo Linux"
 license = "MIT OR Apache-2.0"
