@@ -17,6 +17,7 @@ pub type Treesize = u32;
 pub type OffsetType = i64;
 
 /* Mask Flags constants */
+pub const MASK_NONE: u8 = 0x00;
 pub const MASK_PACKAGE: u8 = 0x01;
 pub const MASK_PROFILE: u8 = 0x02;
 pub const MASK_HARD: u8 = MASK_PACKAGE | MASK_PROFILE;
@@ -47,7 +48,8 @@ pub const DB_VERSION_CURRENT: DBVersion = 39;
  * Then: String hashes (EAPI, License, Keywords, IUSE, Slot, Depend)
  * Then: Feature flags (bitmask)
  * Then: World sets
- */
+*/
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DBHeader {
     // Current database version
@@ -381,6 +383,9 @@ impl Database {
     }
 
     /// Reads a string hash (list of strings)
+    /// Format <number> <1st string>  ... <nth string>
+    /// <number> is the number of strings in the hash
+    /// where <number> is encoded in eix number format
     fn read_hash(&mut self) -> io::Result<StringHash> {
         let count = self.read_num()? as usize;
         let mut hash = StringHash::new();
@@ -437,8 +442,8 @@ impl Database {
             ));
         }
 
-        // 2. Read version (1 byte directly, no compression)
-        let version = self.read_uchar()? as DBVersion;
+        // 2. Read version (eix compressed number)
+        let version = self.read_num()? as DBVersion;
         if version < min_version {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
@@ -449,7 +454,7 @@ impl Database {
             ));
         }
 
-        // 3. Read number of categories (compressed number)
+        // 3. Read number of categories (eix compressed number)
         let size = self.read_num()? as Catsize;
 
         // 4. Read number of overlays (compressed number)
@@ -487,7 +492,7 @@ impl Database {
         let use_required_use = (bitmask & SAVE_BITMASK_REQUIRED_USE) != 0;
         let use_src_uri = (bitmask & SAVE_BITMASK_SRC_URI) != 0;
 
-        // 13. Read depend hash (if enabled in bitmask)
+        // 13. Read depend hash (only if enabled in bitmask)
         let depend_hash = if use_depend {
             // eix writes a length (offset) before the hash here
             let _len = self.read_num()?;
@@ -535,15 +540,21 @@ impl Database {
         let mask_flags = self.read_uchar()?;
         let properties_flags = self.read_uchar()?;
         let restrict_flags = self.read_num()?;
+
+        // HashedWords  Full keywords string of the ebuild
         let keywords = self.read_hash_words(&hdr.keywords_hash)?;
 
+        // Vector       VersionPart_\s
         let part_count = self.read_num()? as usize;
         let mut parts = Vec::with_capacity(part_count);
         for _ in 0..part_count {
             parts.push(self.read_part()?);
         }
 
+        // HashedString Slot name. The slot name "0" is stored as ""
         let slot = self.read_hash_string(&hdr.slot_hash)?;
+
+        // Number       Index of the portage overlay (in the overlays block)
         let overlay_key = self.read_num()?;
 
         let overlay = hdr.overlays.get(overlay_key as usize).ok_or_else(|| {
@@ -555,15 +566,22 @@ impl Database {
         let reponame = overlay.label.clone();
         let priority = overlay.priority;
 
+        // HashedWords  Useflags of this version
         let iuse = self.read_hash_words(&hdr.iuse_hash)?;
 
+        // The following occurs only if REQUIRED_USE is stored
+
+        // HashedWords  REQUIRED_USE of this version
         let mut required_use = Vec::new();
         if hdr.use_required_use {
             required_use = self.read_hash_words(&hdr.iuse_hash)?;
         }
 
+        // The following occurs only if dependencies are stored
+
         let mut depend = None;
         if hdr.use_depend {
+            // Number       Length of the next four entries in bytes
             let _len = self.read_num()?; // Offset
             let mut dep = Depend {
                 depend: self.read_hash_words(&hdr.depend_hash)?,
@@ -581,10 +599,15 @@ impl Database {
             depend = Some(dep);
         }
 
+        // The following occurs only if SRC_URI is stored
+
+        // String       SRC_URI
         let mut src_uri = None;
         if hdr.use_src_uri {
             src_uri = Some(self.read_string()?);
         }
+
+        // finished reading version
 
         Ok(Version {
             version_string: String::new(),
