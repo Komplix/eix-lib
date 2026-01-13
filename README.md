@@ -38,6 +38,14 @@ cargo run --example eix2json -- /var/cache/eix/portage.eix output.json
 
 If no output file is specified, it will output to stdout.
 
+### eix_version_masks
+
+The example `eix_version_masks` displays all versions of each package along with their mask flags and other metadata.
+
+```bash
+cargo run --example eix_version_masks -- /var/cache/eix/portage.eix
+```
+
 ## License
 Licensed under either of
 
