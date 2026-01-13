@@ -222,10 +222,6 @@ pub struct Version {
 }
 
 impl Version {
-    pub fn is_installed(&self) -> bool {
-        (self.mask_flags & MASK_IN_PROFILE) != 0 || (self.mask_flags & MASK_MARKED) != 0
-    }
-
     pub fn get_full_version(&self) -> String {
         let mut s = String::new();
         for part in &self.parts {
@@ -859,33 +855,5 @@ mod tests {
             src_uri: None,
         };
         assert_eq!(v.get_full_version(), "1.2.3_alpha1-r1");
-    }
-
-    #[test]
-    fn test_version_is_installed() {
-        let mut v = Version {
-            version_string: String::new(),
-            parts: vec![],
-            eapi: String::new(),
-            mask_flags: 0,
-            properties_flags: 0,
-            restrict_flags: 0,
-            keywords: vec![],
-            slot: String::new(),
-            overlay_key: 0,
-            reponame: String::new(),
-            priority: 0,
-            iuse: vec![],
-            required_use: vec![],
-            depend: None,
-            src_uri: None,
-        };
-        assert!(!v.is_installed());
-
-        v.mask_flags = MASK_IN_PROFILE;
-        assert!(v.is_installed());
-
-        v.mask_flags = MASK_MARKED;
-        assert!(v.is_installed());
     }
 }
