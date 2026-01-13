@@ -768,22 +768,31 @@ mod tests {
 
     #[test]
     fn test_read_num() {
-        // Test values < 255
-        let mut db = MockDatabase::new(vec![42]);
-        assert_eq!(db.read_num().unwrap(), 42);
+        let cases = vec![
+            (0x00, vec![0x00]),
+            (0xFE, vec![0xFE]),
+            (0xFF, vec![0xFF, 0x00]),
+            (0x0100, vec![0xFF, 0x01, 0x00]),
+            (0x01FF, vec![0xFF, 0x01, 0xFF]),
+            (0xFEFF, vec![0xFF, 0xFE, 0xFF]),
+            (0xFF00, vec![0xFF, 0xFF, 0x00, 0x00]),
+            (0xFF01, vec![0xFF, 0xFF, 0x00, 0x01]),
+            (0x010000, vec![0xFF, 0xFF, 0x01, 0x00, 0x00]),
+            (0xABCDEF, vec![0xFF, 0xFF, 0xAB, 0xCD, 0xEF]),
+            (0xFFABCD, vec![0xFF, 0xFF, 0xFF, 0x00, 0xAB, 0xCD]),
+            (0x01ABCDEF, vec![0xFF, 0xFF, 0xFF, 0x01, 0xAB, 0xCD, 0xEF]),
+        ];
 
-        // Test value 255 (special case: 0xFF, 0x00)
-        let mut db = MockDatabase::new(vec![0xFF, 0x00]);
-        assert_eq!(db.read_num().unwrap(), 255);
+        for (expected, bytes) in cases {
+            let mut db = MockDatabase::new(bytes.clone());
 
-        // Test multi-byte value (e.g., 256: 0xFF, 0x01, 0x00)
-        let mut db = MockDatabase::new(vec![0xFF, 0x01, 0x00]);
-        assert_eq!(db.read_num().unwrap(), 256);
-
-        // Test larger multi-byte value (65536 needs two 0xFF)
-        // 0xFF, 0xFF, 0x01, 0x00, 0x00
-        let mut db = MockDatabase::new(vec![0xFF, 0xFF, 0x01, 0x00, 0x00]);
-        assert_eq!(db.read_num().unwrap(), 65536);
+            let result = db.read_num().expect(&format!("Failed to read {:?}", bytes));
+            assert_eq!(
+                result, expected,
+                "Case {:?} failed: expected 0x{:X}, got 0x{:X}",
+                bytes, expected, result
+            );
+        }
     }
 
     #[test]
